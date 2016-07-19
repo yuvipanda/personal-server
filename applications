@@ -1,0 +1,62 @@
+## Base PHP server ##
+
+We'll use nginx + php5-fpm.
+
+1. Install the following packages:
+   `nginx php5-fpm php5-sqlite`
+   
+That's it really! :D
+
+## Miniflux ##
+
+Miniflux is a self hostable RSS Reader.
+
+1. Install git if you haven't already
+2. Clone miniflux onto `/var/www/miniflux`, as root.
+3. Make `/var/www/miniflux/data/` writeable by `www-data` with:
+   ```
+   chown www-data:www-data /var/www/miniflux/data
+   ```
+4. Use the following nginx config, in `/etc/nginx/sites-available/miniflux`:
+   ```
+   server {
+    server_name miniflux.yuvi.in;
+    root /var/www/miniflux;
+    index index.php;
+
+    location / {
+        try_files $uri $uri/ /index.php$is_args$args;
+    }
+
+    location /data {
+        deny all;
+        return 404;
+    }
+
+    location ~ \.php(/|$) {
+        fastcgi_pass unix:/var/run/php5-fpm.sock;
+        fastcgi_split_path_info ^(.+\.php)(/.*)$;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        # Prevents URIs that include the front controller. This will 404:
+        # http://domain.tld/app.php/some-path
+        # Remove the internal directive to allow URIs like this
+        internal;
+    }
+
+    error_log /var/log/nginx/miniflux_error.log;
+    access_log /var/log/nginx/miniflux_access.log;
+  }
+  ```
+5. Enable it by symlinking it to `/etc/nginx/sites-enabled`
+6. Add a cronjob to update feeds, by adding:
+   ```
+   * */4 * * *  cd /var/www/miniflux && php cronjob.php --call-interval=4 --update-interval=60 >/dev/null 2>&1
+   ```
+   to `sudo -u www-data crontab -e`
+7. Done!
+
+Note that this isn't the most secure setup - we should use fpm pools for it, but later!
+
+   
