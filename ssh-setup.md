@@ -19,5 +19,5 @@ Uses https://github.com/yuvipanda/github-ssh-auth so I can always login with my 
    ```
    in `/etc/sudoers` to be:
   ```
-   %sudo   ALL=(ALL:ALL) NOPASSWD ALL
+   %sudo   ALL=(ALL:ALL) NOPASSWD: ALL
   ```
